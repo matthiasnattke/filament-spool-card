@@ -2,6 +2,8 @@
 
 Your [Spoolman](https://github.com/Donkie/Spoolman) filament stock as a Home Assistant card: every spool is drawn as a roll in its filament colour, and the roll gets thinner as it is used up. Tap a spool to change it, and the change goes straight to Spoolman.
 
+![Preview](images/preview.png)
+
 - **Edit the amount:** subtract what a print used (default) or set the remaining weight. Decimal comma and decimal point both work.
 - **Tool heads:** load a spool onto a tool head (Spoolman extra field `active_toolhead`). If another spool sits on that head, it is moved back to your storage location first.
 - **Location:** move spools between locations; spools are grouped by location.
