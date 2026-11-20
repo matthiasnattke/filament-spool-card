@@ -3,7 +3,7 @@
    "New spool" creates spools (and, if needed, filaments and vendors) in Spoolman through a rest_command (see README).
    Needs the Spoolman integration (https://github.com/Disane87/spoolman-homeassistant).
    MIT License – see LICENSE */
-const FSC_VERSION = '1.0.2';
+const FSC_VERSION = '1.0.3';
 const FSC_DENSITY = { PLA: 1.24, PETG: 1.27, ABS: 1.04, ASA: 1.07, TPU: 1.21, PA: 1.14, PC: 1.2, PVA: 1.23, HIPS: 1.04 };
 const FSC_LANG = (h) => { const l = ((h && ((h.locale && h.locale.language) || h.language)) || 'en').slice(0, 2); return l === 'de' ? 'de' : 'en'; };
 const FSC_I18N = {
@@ -235,12 +235,12 @@ class FilamentSpoolCard extends HTMLElement {
     if (c.summary) {
       const kg = (g) => (g >= 1000 ? (g / 1000).toLocaleString(T.loc, { maximumFractionDigits: 1 }) + ' kg' : Math.round(g) + ' g');
       const lows = this._all.filter((p) => p.rem <= low).sort((a, b) => a.rem - b.rem);
-      if (lows.length) extra += `<div class="gh"><b>${T.low}</b><span>${esc(T.below(low))}</span></div>${lows.map((p) => `<div class="lw"><span class="dt" style="background:${p.col}"></span><span class="ln">${esc(p.name)} <small>${esc(p.sub)}</small></span><i class="lo">${Math.round(p.rem)} g${loaded(p) ? ' · T' + esc(p.tool) : ''}</i></div>`).join('')}`;
+      if (lows.length && c.show_low !== false) extra += `<div class="gh"><b>${T.low}</b><span>${esc(T.below(low))}</span></div>${lows.map((p) => `<div class="lw"><span class="dt" style="background:${p.col}"></span><span class="ln">${esc(p.name)} <small>${esc(p.sub)}</small></span><i class="lo">${Math.round(p.rem)} g${loaded(p) ? ' · T' + esc(p.tool) : ''}</i></div>`).join('')}`;
       const mats = {};
       this._all.forEach((p) => { const m = mats[p.mat] || (mats[p.mat] = { g: 0, n: 0, h: 0 }); m.g += p.rem; m.n++; if (p.f >= 0.5) m.h++; });
       const ml = Object.entries(mats).sort((a, b) => b[1].g - a[1].g), mx = ml.length ? ml[0][1].g || 1 : 1;
       const wert = this._all.reduce((a, p) => a + (p.ppg ? p.rem * p.ppg : 0), 0), ohne = this._all.filter((p) => !p.ppg).length;
-      if (ml.length) extra += `<div class="gh"><b>${T.byMat}</b><span>${esc(T.total(kg(this._all.reduce((a, p) => a + p.rem, 0))))}${wert > 0 ? ' · ' + T.value + ' ' + this._money(wert) + (ohne ? ' ' + T.noPriceN(ohne) : '') : ''}</span></div>${ml.map(([m, v]) => `<div class="mt"><b>${esc(m)}</b><div class="br"><div style="width:${Math.max(2, (v.g / mx) * 100).toFixed(1)}%"></div></div><span>${kg(v.g)}</span><small>${esc(T.spools(v.n))} · ${esc(T.half(v.h))}</small></div>`).join('')}`;
+      if (ml.length && c.show_materials !== false) extra += `<div class="gh"><b>${T.byMat}</b><span>${esc(T.total(kg(this._all.reduce((a, p) => a + p.rem, 0))))}${wert > 0 ? ' · ' + T.value + ' ' + this._money(wert) + (ohne ? ' ' + T.noPriceN(ohne) : '') : ''}</span></div>${ml.map(([m, v]) => `<div class="mt"><b>${esc(m)}</b><div class="br"><div style="width:${Math.max(2, (v.g / mx) * 100).toFixed(1)}%"></div></div><span>${kg(v.g)}</span><small>${esc(T.spools(v.n))} · ${esc(T.half(v.h))}</small></div>`).join('')}`;
     }
     const d = (e && ep ? e : n) || {}, dis = d.busy ? ' disabled' : '';
     const nt = Number(c.toolheads) > 0 ? Number(c.toolheads) : 5;

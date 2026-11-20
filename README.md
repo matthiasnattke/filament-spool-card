@@ -56,6 +56,8 @@ Without it, everything except *New spool* works.
 | `toolheads` | `5` | Number of tool heads to offer |
 | `low` | `100` | Below this many grams a spool counts as running low (shown in red) |
 | `summary` | `false` | Show the *Running low* and *Stock by material* blocks |
+| `show_low` | `true` | With `summary`: `false` hides the *Running low* block |
+| `show_materials` | `true` | With `summary`: `false` hides the *Stock by material* block |
 | `currency` | `EUR` | Currency for prices and costs (ISO code, e.g. `USD`) |
 | `editable` | `true` | `false` makes the card read-only (tap shows the details) |
 | `api_service` | `spoolman_api` | Name of the `rest_command` used for creating spools |
@@ -86,7 +88,7 @@ hide_loaded: true
 
 Die Karte zeigt deinen Filamentbestand aus Spoolman als Rollen in der jeweiligen Farbe. Antippen öffnet die Bearbeitung: Verbrauch abziehen (Standard) oder Restmenge setzen, Druckkopf und Lagerort wählen, Preis der Spule eintragen. Alles wird direkt in Spoolman gespeichert. Komma und Punkt funktionieren beide.
 
-Mit `summary: true` zeigt die Karte zusätzlich, welche Spulen bald leer sind, und den Bestand nach Material mit Gesamtwert. Neue Spulen lassen sich anlegen, sobald der `rest_command` oben in der `configuration.yaml` steht. Die Oberfläche folgt der Spracheinstellung in Home Assistant.
+Mit `summary: true` zeigt die Karte zusätzlich, welche Spulen bald leer sind, und den Bestand nach Material mit Gesamtwert. Beide Blöcke lassen sich einzeln mit `show_low: false` bzw. `show_materials: false` ausblenden. Neue Spulen lassen sich anlegen, sobald der `rest_command` oben in der `configuration.yaml` steht. Die Oberfläche folgt der Spracheinstellung in Home Assistant.
 
 ## License
 
