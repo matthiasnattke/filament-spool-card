@@ -3,7 +3,7 @@
    "New spool" creates spools (and, if needed, filaments and vendors) in Spoolman through a rest_command (see README).
    Needs the Spoolman integration (https://github.com/Disane87/spoolman-homeassistant).
    MIT License – see LICENSE */
-const FSC_VERSION = '1.0.1';
+const FSC_VERSION = '1.0.2';
 const FSC_DENSITY = { PLA: 1.24, PETG: 1.27, ABS: 1.04, ASA: 1.07, TPU: 1.21, PA: 1.14, PC: 1.2, PVA: 1.23, HIPS: 1.04 };
 const FSC_LANG = (h) => { const l = ((h && ((h.locale && h.locale.language) || h.language)) || 'en').slice(0, 2); return l === 'de' ? 'de' : 'en'; };
 const FSC_I18N = {
@@ -24,8 +24,8 @@ const FSC_I18N = {
     reply: 'Spoolman answered', noReply: 'no answer',
     noLoc: 'No location', count: (n, g) => `${n} ${n === 1 ? 'spool' : 'spools'} · ${g} g`, loc: 'en-GB',
     price: 'Spool price', pricePh: 'e.g. 19.99', errPrice: 'Please enter a valid price, e.g. 19.99.', cost: 'cost ≈', perKg: 'per kg', worth: 'remaining worth ≈', fromFil: '(from the filament)', noPrice: 'no price, no cost estimate',
-    low: 'Running low', below: (n) => `below ${n} g`, shopAll: 'Add all to the shopping list', shop: '🛒 Reorder', onList: '✓ on the list',
-    byMat: 'Stock by material', total: (w) => `${w} in total`, value: 'value ≈', noPriceN: (n) => `(${n} without price)`, spools: (n) => `${n} ${n === 1 ? 'spool' : 'spools'}`, half: (n) => `${n} more than half full`, noMat: 'No material', item: 'Filament',
+    low: 'Running low', below: (n) => `below ${n} g`,
+    byMat: 'Stock by material', total: (w) => `${w} in total`, value: 'value ≈', noPriceN: (n) => `(${n} without price)`, spools: (n) => `${n} ${n === 1 ? 'spool' : 'spools'}`, half: (n) => `${n} more than half full`, noMat: 'No material',
   },
   de: {
     title: 'Filamentbestand', add: '＋ Neue Spule', none: 'Keine Spulen gefunden', weight: 'Gewicht', remaining: 'Restmenge', subtract: 'Verbrauch abziehen', used: 'Verbraucht',
@@ -44,8 +44,8 @@ const FSC_I18N = {
     reply: 'Spoolman meldet', noReply: 'keine Antwort',
     noLoc: 'Ohne Lagerort', count: (n, g) => `${n} ${n === 1 ? 'Spule' : 'Spulen'} · ${g} g`, loc: 'de-DE',
     price: 'Preis der Spule', pricePh: 'z. B. 19,99', errPrice: 'Bitte einen gültigen Preis eingeben, z. B. 19,99.', cost: 'Kosten ≈', perKg: 'pro kg', worth: 'Restwert ≈', fromFil: '(vom Filament)', noPrice: 'ohne Preis keine Kostenschätzung',
-    low: 'Bald leer', below: (n) => `unter ${n} g`, shopAll: 'Alle auf die Einkaufsliste', shop: '🛒 Nachkaufen', onList: '✓ auf der Liste',
-    byMat: 'Bestand nach Material', total: (w) => `${w} gesamt`, value: 'Wert ≈', noPriceN: (n) => `(${n} ohne Preis)`, spools: (n) => `${n} ${n === 1 ? 'Spule' : 'Spulen'}`, half: (n) => `${n} über halb voll`, noMat: 'Ohne Material', item: 'Filament',
+    low: 'Bald leer', below: (n) => `unter ${n} g`,
+    byMat: 'Bestand nach Material', total: (w) => `${w} gesamt`, value: 'Wert ≈', noPriceN: (n) => `(${n} ohne Preis)`, spools: (n) => `${n} ${n === 1 ? 'Spule' : 'Spulen'}`, half: (n) => `${n} über halb voll`, noMat: 'Ohne Material',
   },
 };
 
@@ -59,22 +59,6 @@ class FilamentSpoolCard extends HTMLElement {
   _ids() { return this._c.entities || Object.keys(this._hass.states).filter((i) => /^sensor\.spoolman_spool_\d+$/.test(i)); }
   _num(v) { return parseFloat(String(v == null ? '' : v).replace(',', '.')); }
   _money(v) { try { return v.toLocaleString(this._t().loc, { style: 'currency', currency: this._c.currency || 'EUR' }); } catch (x) { return (Math.round(v * 100) / 100).toLocaleString(this._t().loc) + ' ' + (this._c.currency || 'EUR'); } }
-  _todo() { return this._c.shopping_list || 'todo.shopping_list'; }
-  async _loadTodo() {
-    const ent = this._todo();
-    if (!this._hass.states[ent]) { this._tItems = null; return; }
-    try {
-      const r = await this._hass.connection.sendMessagePromise({ type: 'call_service', domain: 'todo', service: 'get_items', service_data: { status: ['needs_action'] }, target: { entity_id: ent }, return_response: true });
-      const x = ((r && r.response) || {})[ent];
-      this._tItems = x && x.items ? x.items.map((i) => i.summary) : [];
-    } catch (err) { this._tItems = []; }
-    if (!this._edit && !this._new) this._render();
-  }
-  async _shop(list) {
-    const ent = this._todo(), have = this._tItems || [];
-    try { for (const x of list) if (!have.includes(x.t)) await this._hass.callService('todo', 'add_item', { item: x.t }, { entity_id: ent }); } catch (err) { /* list not reachable */ }
-    await this._loadTodo();
-  }
   _wait() { return new Promise((r) => setTimeout(r, this._c.wait_ms != null ? Number(this._c.wait_ms) : 1500)); }
   _svc() { return this._c.api_service || 'spoolman_api'; }
   _hasApi() { const s = this._hass.services || {}; return !!(s.rest_command && s.rest_command[this._svc()]); }
@@ -86,7 +70,6 @@ class FilamentSpoolCard extends HTMLElement {
     const ids = this._ids();
     const sig = FSC_LANG(h) + ids.map((i) => { const s = h.states[i]; return i + ':' + (s ? [s.state, s.attributes.location, s.attributes.extra_active_toolhead, s.attributes.archived].join('|') : ''); }).join(',');
     if (sig !== this._sig) { this._sig = sig; if (!this._edit && !this._new) this._render(); }
-    if (this._c.summary) { const t = h.states[this._todo()], ts = t ? t.state + t.last_updated : '-'; if (ts !== this._tsig) { this._tsig = ts; this._loadTodo(); } }
   }
 
   /* Filaments and vendors come from the integration's filament sensors */
@@ -251,10 +234,8 @@ class FilamentSpoolCard extends HTMLElement {
     let extra = '';
     if (c.summary) {
       const kg = (g) => (g >= 1000 ? (g / 1000).toLocaleString(T.loc, { maximumFractionDigits: 1 }) + ' kg' : Math.round(g) + ' g');
-      const txt = (p) => T.item + ' ' + p.name + (p.sub ? ' (' + p.sub.replace(/ · /g, ' ') + ')' : '');
-      const tl = this._tItems, lows = this._all.filter((p) => p.rem <= low).sort((a, b) => a.rem - b.rem), miss = tl ? lows.filter((p) => !tl.includes(txt(p))) : [];
-      this._lowTxt = Object.fromEntries(lows.map((p) => [p.id, { t: txt(p) }]));
-      if (lows.length) extra += `<div class="gh"><b>${T.low}</b><span>${esc(T.below(low))}</span>${tl && miss.length > 1 ? `<button class="cb" data-c="*">${T.shopAll}</button>` : ''}</div>${lows.map((p) => `<div class="lw"><span class="dt" style="background:${p.col}"></span><span class="ln">${esc(p.name)} <small>${esc(p.sub)}</small></span><i class="lo">${Math.round(p.rem)} g${loaded(p) ? ' · T' + esc(p.tool) : ''}</i>${tl ? (tl.includes(txt(p)) ? `<span class="ok">${T.onList}</span>` : `<button class="cb" data-c="${esc(p.id)}">${T.shop}</button>`) : ''}</div>`).join('')}`;
+      const lows = this._all.filter((p) => p.rem <= low).sort((a, b) => a.rem - b.rem);
+      if (lows.length) extra += `<div class="gh"><b>${T.low}</b><span>${esc(T.below(low))}</span></div>${lows.map((p) => `<div class="lw"><span class="dt" style="background:${p.col}"></span><span class="ln">${esc(p.name)} <small>${esc(p.sub)}</small></span><i class="lo">${Math.round(p.rem)} g${loaded(p) ? ' · T' + esc(p.tool) : ''}</i></div>`).join('')}`;
       const mats = {};
       this._all.forEach((p) => { const m = mats[p.mat] || (mats[p.mat] = { g: 0, n: 0, h: 0 }); m.g += p.rem; m.n++; if (p.f >= 0.5) m.h++; });
       const ml = Object.entries(mats).sort((a, b) => b[1].g - a[1].g), mx = ml.length ? ml[0][1].g || 1 : 1;
@@ -332,8 +313,8 @@ svg{display:block;width:100%;height:auto}
 .nm{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .gr{font-size:13px}.gr.lo{color:var(--error-color,#db4437);font-weight:700}
 .su{font-size:11px;color:var(--secondary-text-color,#777);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.su.wr{white-space:normal;font-size:13px;margin-top:6px}
-.lw{display:flex;align-items:center;gap:8px;padding:5px 4px;font-size:13px;min-height:40px}.ln{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ln small{color:var(--secondary-text-color,#777);font-size:11px}.lw i{font-style:normal;white-space:nowrap}.lo{color:var(--error-color,#db4437);font-weight:700}.ok{font-size:12px;color:var(--success-color,#43a047);white-space:nowrap}
-.gh .cb{margin-left:auto}.cb{min-height:32px;padding:0 10px;font-size:12px;white-space:nowrap}
+.lw{display:flex;align-items:center;gap:8px;padding:5px 4px;font-size:13px;min-height:40px}.ln{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ln small{color:var(--secondary-text-color,#777);font-size:11px}.lw i{font-style:normal;white-space:nowrap}.lo{color:var(--error-color,#db4437);font-weight:700}
+
 .mt{display:grid;grid-template-columns:minmax(48px,auto) 1fr auto;column-gap:10px;align-items:center;padding:5px 4px;font-size:13px}.mt small{grid-column:2 / 4;font-size:11px;color:var(--secondary-text-color,#777)}.mt span{font-variant-numeric:tabular-nums}
 .br{height:8px;border-radius:4px;background:var(--secondary-background-color,#eee);overflow:hidden}.br div{height:100%;border-radius:4px;background:var(--primary-color,#03a9f4)}
 .em{color:var(--secondary-text-color,#777);padding:8px 4px}
@@ -356,7 +337,6 @@ button:disabled,input:disabled,select:disabled{opacity:.55;cursor:default}
 .ac{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}.fx{flex:1}
 </style><ha-card><div class="hr"><div class="hd">${esc(c.title != null ? c.title : T.title)}</div>${c.editable === false ? '' : `<button id="add"${dis}>${T.add}</button>`}</div>${ed}${items || `<div class="em">${T.none}</div>`}${extra}</ha-card>`;
     const root = this.shadowRoot, q = (s) => root.querySelector(s), busy = () => !!((this._edit && this._edit.busy) || (this._new && this._new.busy));
-    root.querySelectorAll('.cb').forEach((b) => b.addEventListener('click', () => { const L = this._lowTxt || {}; b.disabled = true; this._shop(b.dataset.c === '*' ? Object.values(L) : [L[b.dataset.c]].filter(Boolean)); }));
     root.querySelectorAll('.sp').forEach((el) => el.addEventListener('click', () => { if (!busy()) this._open(el.dataset.id); }));
     if (q('#add')) q('#add').addEventListener('click', () => { if (!busy()) this._openNew(); });
     const D = this._edit || this._new;
