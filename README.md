@@ -22,7 +22,9 @@ UI texts are available in **English and German** and follow the user's language.
 
 ## Installation
 
-**HACS** (recommended): HACS → ⋮ → *Custom repositories* → add this repository's URL with type *Dashboard* → install *Filament Spool Card* → reload the browser.
+**HACS (recommended):** open HACS, search for **Filament Spool Card**, install it and reload the browser.
+
+If it does not show up yet: HACS → ⋮ → *Custom repositories* → add this repository's URL with type *Dashboard* → install → reload the browser.
 
 **Manual:** copy `filament-spool-card.js` to `config/www/` and add it as a dashboard resource (`/local/filament-spool-card.js`, type *JavaScript module*).
 
@@ -55,7 +57,7 @@ Without it, everything except *New spool* works.
 | `low` | `100` | Below this many grams a spool counts as running low (shown in red) |
 | `summary` | `false` | Show the *Running low* and *Stock by material* blocks |
 | `shopping_list` | `todo.shopping_list` | To-do entity for the reorder button |
-| `shop_url` | Amazon search | Shop link for low spools, `{q}` is replaced by vendor, material and colour. `false` hides the link |
+| `shop_url` | Amazon search | Shop link for low spools, `{q}` is replaced by vendor, material and colour. Must start with `http://` or `https://`; `false` hides the link |
 | `currency` | `EUR` | Currency for prices and costs (ISO code, e.g. `USD`) |
 | `editable` | `true` | `false` makes the card read-only (tap shows the details) |
 | `api_service` | `spoolman_api` | Name of the `rest_command` used for creating spools |

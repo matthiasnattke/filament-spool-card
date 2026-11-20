@@ -3,7 +3,7 @@
    "New spool" creates spools (and, if needed, filaments and vendors) in Spoolman through a rest_command (see README).
    Needs the Spoolman integration (https://github.com/Disane87/spoolman-homeassistant).
    MIT License – see LICENSE */
-const FSC_VERSION = '1.0.0';
+const FSC_VERSION = '1.0.1';
 const FSC_DENSITY = { PLA: 1.24, PETG: 1.27, ABS: 1.04, ASA: 1.07, TPU: 1.21, PA: 1.14, PC: 1.2, PVA: 1.23, HIPS: 1.04 };
 const FSC_LANG = (h) => { const l = ((h && ((h.locale && h.locale.language) || h.language)) || 'en').slice(0, 2); return l === 'de' ? 'de' : 'en'; };
 const FSC_I18N = {
@@ -244,7 +244,7 @@ class FilamentSpoolCard extends HTMLElement {
     };
     const e = this._edit, ep = e ? this._all.find((p) => p.id === e.id) : null, n = this._new;
     if (e && !ep) this._edit = null;
-    const item = (p) => `<div class="sp${e && e.id === p.id ? ' se' : ''}" data-id="${p.id}"><div class="ro">${svg(p)}${loaded(p) ? `<span class="tl">T${esc(p.tool)}</span>` : ''}</div><div class="nm">${esc(p.name)}</div><div class="gr${p.rem <= low ? ' lo' : ''}">${Math.round(p.rem)} g · ${Math.round(p.f * 100)} %</div><div class="su">${esc(p.sub)}</div></div>`;
+    const item = (p) => `<div class="sp${e && e.id === p.id ? ' se' : ''}" data-id="${esc(p.id)}"><div class="ro">${svg(p)}${loaded(p) ? `<span class="tl">T${esc(p.tool)}</span>` : ''}</div><div class="nm">${esc(p.name)}</div><div class="gr${p.rem <= low ? ' lo' : ''}">${Math.round(p.rem)} g · ${Math.round(p.f * 100)} %</div><div class="su">${esc(p.sub)}</div></div>`;
     const groups = [];
     spools.forEach((p) => { const k = p.loc || T.noLoc; let g = groups.find((x) => x.k === k); if (!g) { g = { k, l: [] }; groups.push(g); } g.l.push(p); });
     const items = groups.map((g) => `${groups.length > 1 || c.hide_loaded ? `<div class="gh"><b>${esc(g.k)}</b><span>${esc(T.count(g.l.length, Math.round(g.l.reduce((a, p) => a + p.rem, 0)).toLocaleString(T.loc)))}</span></div>` : ''}<div class="gd">${g.l.map(item).join('')}</div>`).join('');
@@ -252,11 +252,11 @@ class FilamentSpoolCard extends HTMLElement {
     if (c.summary) {
       const kg = (g) => (g >= 1000 ? (g / 1000).toLocaleString(T.loc, { maximumFractionDigits: 1 }) + ' kg' : Math.round(g) + ' g');
       const txt = (p) => T.item + ' ' + p.name + (p.sub ? ' (' + p.sub.replace(/ · /g, ' ') + ')' : '');
-      const tmpl = c.shop_url === false ? '' : c.shop_url || T.shopUrl;
+      const tmpl = c.shop_url === false ? '' : /^https?:\/\//i.test(String(c.shop_url || '')) ? String(c.shop_url) : T.shopUrl;
       const url = (p) => (tmpl ? tmpl.replace('{q}', encodeURIComponent([p.vendor, p.mat, p.name, T.item, '1.75 mm'].filter(Boolean).join(' '))) : '');
       const tl = this._tItems, lows = this._all.filter((p) => p.rem <= low).sort((a, b) => a.rem - b.rem), miss = tl ? lows.filter((p) => !tl.includes(txt(p))) : [];
       this._lowTxt = Object.fromEntries(lows.map((p) => [p.id, { t: txt(p), u: url(p) }]));
-      if (lows.length) extra += `<div class="gh"><b>${T.low}</b><span>${esc(T.below(low))}</span>${tl && miss.length > 1 ? `<button class="cb" data-c="*">${T.shopAll}</button>` : ''}</div>${lows.map((p) => `<div class="lw"><span class="dt" style="background:${p.col}"></span><span class="ln">${esc(p.name)} <small>${esc(p.sub)}</small></span><i class="lo">${Math.round(p.rem)} g${loaded(p) ? ' · T' + esc(p.tool) : ''}</i>${tmpl ? `<a class="az" href="${esc(url(p))}" target="_blank" rel="noopener noreferrer">${T.shopLink}</a>` : ''}${tl ? (tl.includes(txt(p)) ? `<span class="ok">${T.onList}</span>` : `<button class="cb" data-c="${p.id}">${T.shop}</button>`) : ''}</div>`).join('')}`;
+      if (lows.length) extra += `<div class="gh"><b>${T.low}</b><span>${esc(T.below(low))}</span>${tl && miss.length > 1 ? `<button class="cb" data-c="*">${T.shopAll}</button>` : ''}</div>${lows.map((p) => `<div class="lw"><span class="dt" style="background:${p.col}"></span><span class="ln">${esc(p.name)} <small>${esc(p.sub)}</small></span><i class="lo">${Math.round(p.rem)} g${loaded(p) ? ' · T' + esc(p.tool) : ''}</i>${tmpl ? `<a class="az" href="${esc(url(p))}" target="_blank" rel="noopener noreferrer">${T.shopLink}</a>` : ''}${tl ? (tl.includes(txt(p)) ? `<span class="ok">${T.onList}</span>` : `<button class="cb" data-c="${esc(p.id)}">${T.shop}</button>`) : ''}</div>`).join('')}`;
       const mats = {};
       this._all.forEach((p) => { const m = mats[p.mat] || (mats[p.mat] = { g: 0, n: 0, h: 0 }); m.g += p.rem; m.n++; if (p.f >= 0.5) m.h++; });
       const ml = Object.entries(mats).sort((a, b) => b[1].g - a[1].g), mx = ml.length ? ml[0][1].g || 1 : 1;
@@ -298,10 +298,10 @@ ${e.err ? `<div class="er">${esc(e.err)}</div>` : ''}
         ed = `<div class="ed">
 <div class="en">${T.newSpool}</div>
 <div class="lb">${T.filament}</div>
-<div class="rw"><select data-f="fil" data-r="1"${dis}>${fils.map((f) => `<option value="${f.id}"${String(f.id) === n.fil ? ' selected' : ''}>${esc([f.vendor, f.name, f.mat].filter(Boolean).join(' · '))}</option>`).join('')}<option value="new"${n.fil === 'new' ? ' selected' : ''}>${T.newFil}</option></select></div>
+<div class="rw"><select data-f="fil" data-r="1"${dis}>${fils.map((f) => `<option value="${esc(f.id)}"${String(f.id) === n.fil ? ' selected' : ''}>${esc([f.vendor, f.name, f.mat].filter(Boolean).join(' · '))}</option>`).join('')}<option value="new"${n.fil === 'new' ? ' selected' : ''}>${T.newFil}</option></select></div>
 ${n.fil === 'new' ? `<div class="nf">
 <div class="lb">${T.vendor}</div>
-<div class="rw"><select data-f="vendor" data-r="1"${dis}>${vend.map((v) => `<option value="${v.id}"${String(v.id) === n.vendor ? ' selected' : ''}>${esc(v.name)}</option>`).join('')}<option value="new"${n.vendor === 'new' ? ' selected' : ''}>${T.newVendor}</option></select>${n.vendor === 'new' ? inp('vname', n.vname, ` placeholder="${esc(T.vendorName)}" class="tx"`) : ''}</div>
+<div class="rw"><select data-f="vendor" data-r="1"${dis}>${vend.map((v) => `<option value="${esc(v.id)}"${String(v.id) === n.vendor ? ' selected' : ''}>${esc(v.name)}</option>`).join('')}<option value="new"${n.vendor === 'new' ? ' selected' : ''}>${T.newVendor}</option></select>${n.vendor === 'new' ? inp('vname', n.vname, ` placeholder="${esc(T.vendorName)}" class="tx"`) : ''}</div>
 <div class="g2"><div><div class="lb">${T.name}</div>${inp('name', n.name, ` placeholder="${esc(T.namePh)}" class="tx"`)}</div><div><div class="lb">${T.colour}</div><input data-f="color" type="color" value="${esc(n.color)}"${dis}></div></div>
 <div class="g2"><div><div class="lb">${T.material}</div>${inp('material', n.material, ' list="mats" class="tx"')}<datalist id="mats">${Object.keys(FSC_DENSITY).map((m) => `<option>${m}</option>`).join('')}</datalist></div><div><div class="lb">${T.density}</div>${inp('density', n.density, num)}</div></div>
 <div class="g2"><div><div class="lb">${T.content}</div>${inp('weight', n.weight, num)}</div><div><div class="lb">${T.emptySpool}</div>${inp('spw', n.spw, num + ` placeholder="${esc(T.optional)}"`)}</div><div><div class="lb">${T.diameter}</div>${inp('dia', n.dia, num)}</div></div>
