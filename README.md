@@ -9,7 +9,7 @@ Your [Spoolman](https://github.com/Donkie/Spoolman) filament stock as a Home Ass
 - **Location:** move spools between locations; spools are grouped by location.
 - **New spools:** create spools – and, if needed, new filaments and vendors – right from the card.
 - **Prices and costs:** store the price of a spool; the card estimates what a print cost and what your stock is worth.
-- **Running low and reorder (optional):** spools below a threshold are listed with a shop link and a button that puts them on your Home Assistant shopping list.
+- **Running low and reorder (optional):** spools below a threshold are listed with a button that puts them on your Home Assistant shopping list.
 - **Stock by material (optional):** totals per material, with value.
 
 UI texts are available in **English and German** and follow the user's language.
@@ -57,7 +57,6 @@ Without it, everything except *New spool* works.
 | `low` | `100` | Below this many grams a spool counts as running low (shown in red) |
 | `summary` | `false` | Show the *Running low* and *Stock by material* blocks |
 | `shopping_list` | `todo.shopping_list` | To-do entity for the reorder button |
-| `shop_url` | Amazon search | Shop link for low spools, `{q}` is replaced by vendor, material and colour. Must start with `http://` or `https://`; `false` hides the link |
 | `currency` | `EUR` | Currency for prices and costs (ISO code, e.g. `USD`) |
 | `editable` | `true` | `false` makes the card read-only (tap shows the details) |
 | `api_service` | `spoolman_api` | Name of the `rest_command` used for creating spools |
@@ -88,7 +87,7 @@ hide_loaded: true
 
 Die Karte zeigt deinen Filamentbestand aus Spoolman als Rollen in der jeweiligen Farbe. Antippen öffnet die Bearbeitung: Verbrauch abziehen (Standard) oder Restmenge setzen, Druckkopf und Lagerort wählen, Preis der Spule eintragen. Alles wird direkt in Spoolman gespeichert. Komma und Punkt funktionieren beide.
 
-Mit `summary: true` zeigt die Karte zusätzlich, welche Spulen bald leer sind (mit Shop-Link und Knopf für die Einkaufsliste), und den Bestand nach Material mit Gesamtwert. Neue Spulen lassen sich anlegen, sobald der `rest_command` oben in der `configuration.yaml` steht. Die Oberfläche folgt der Spracheinstellung in Home Assistant.
+Mit `summary: true` zeigt die Karte zusätzlich, welche Spulen bald leer sind (mit Knopf für die Einkaufsliste), und den Bestand nach Material mit Gesamtwert. Neue Spulen lassen sich anlegen, sobald der `rest_command` oben in der `configuration.yaml` steht. Die Oberfläche folgt der Spracheinstellung in Home Assistant.
 
 ## License
 
